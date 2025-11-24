@@ -45,22 +45,22 @@ const MoistureChart = () => {
             dataKey="timestamp"
             tickFormatter={formatDate}
             tickMargin={8}
-            stroke="#475569"
+            stroke="var(--muted)"
           />
-          <YAxis domain={[0, 100]} tickCount={6} tickMargin={8} stroke="#475569" />
+          <YAxis domain={[0, 100]} tickCount={6} tickMargin={8} stroke="var(--muted)" />
           <Tooltip
             labelFormatter={(value) => `Datum: ${new Date(value).toLocaleString()}`}
             formatter={(value) => [`${value}%`, 'Feuchtigkeit']}
           />
-          <ReferenceArea y1={50} y2={100} fill="#e6f4ea" fillOpacity={0.6} />
-          <ReferenceArea y1={30} y2={49} fill="#fff7e6" fillOpacity={0.7} />
-          <ReferenceArea y1={0} y2={29} fill="#fdecec" fillOpacity={0.8} />
+          <ReferenceArea y1={50} y2={100} fill="#d9f0e1" fillOpacity={0.7} />
+          <ReferenceArea y1={30} y2={49} fill="#fbf0d5" fillOpacity={0.75} />
+          <ReferenceArea y1={0} y2={29} fill="#f7e1d9" fillOpacity={0.8} />
           <Line
             type="monotone"
             dataKey="moisture"
-            stroke="#2563eb"
+            stroke="#0f6b38"
             strokeWidth={2}
-            dot={{ r: 3, strokeWidth: 1, stroke: '#2563eb', fill: '#ffffff' }}
+            dot={{ r: 3, strokeWidth: 1, stroke: '#0f6b38', fill: '#ffffff' }}
             isAnimationActive={false}
           />
         </LineChart>

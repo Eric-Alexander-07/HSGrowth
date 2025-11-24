@@ -25,6 +25,14 @@ const dummySensors = [
   },
 ]
 
+const statusSnapshot = {
+  overall: 'Stabil',
+  avgMoisture: 43,
+  rainChance: 32,
+  temp: 18,
+  wind: 9,
+}
+
 const Dashboard = () => {
   return (
     <section className="page dashboard">
@@ -35,6 +43,21 @@ const Dashboard = () => {
           Aktueller Stand der Bodenfeuchte (Dummy-Daten). API-/Live-Integration folgt.
         </p>
       </header>
+
+      <section className="status-strip">
+        <article className="status-chip">
+          <p className="status-chip__label">Gesamtstatus</p>
+          <p className="status-chip__value">{statusSnapshot.overall}</p>
+        </article>
+        <article className="status-chip">
+          <p className="status-chip__label">Ø Bodenfeuchte</p>
+          <p className="status-chip__value">{statusSnapshot.avgMoisture}%</p>
+        </article>
+        <article className="status-chip">
+          <p className="status-chip__label">Regenwahrscheinlichkeit</p>
+          <p className="status-chip__value">{statusSnapshot.rainChance}%</p>
+        </article>
+      </section>
 
       <section className="panel selection-panel">
         <h2>Beet-Auswahl</h2>
@@ -75,6 +98,32 @@ const Dashboard = () => {
         </header>
         <ChartPlaceholder />
         <MoistureChart />
+      </section>
+
+      <section className="panel">
+        <header className="panel__header">
+          <h2>Wetter & Regen</h2>
+          <p className="panel__hint">
+            Detailansicht fuer Regenwahrscheinlichkeit, Temperatur, Wind und Hinweise (Dummy).
+          </p>
+        </header>
+        <div className="weather-grid">
+          <article className="weather-card">
+            <p className="weather-card__label">Regenwahrscheinlichkeit</p>
+            <p className="weather-card__value">{statusSnapshot.rainChance}%</p>
+            <p className="weather-card__note">Niederschlag in den naechsten 6h gering.</p>
+          </article>
+          <article className="weather-card">
+            <p className="weather-card__label">Temperatur</p>
+            <p className="weather-card__value">{statusSnapshot.temp}&deg;C</p>
+            <p className="weather-card__note">Leicht bewölkt, gute Bedingungen fuer Bewässerung.</p>
+          </article>
+          <article className="weather-card">
+            <p className="weather-card__label">Wind</p>
+            <p className="weather-card__value">{statusSnapshot.wind} km/h</p>
+            <p className="weather-card__note">Windstill genug fuer genaue Sensorwerte.</p>
+          </article>
+        </div>
       </section>
     </section>
   )
