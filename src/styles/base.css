@@ -1,0 +1,136 @@
+/* base.css - Minimaler Style-Rahmen für Layout und Platzhalter. */
+:root {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #0f172a;
+  background-color: #f7f9fb;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f7f9fb;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header,
+.app-footer {
+  padding: 1rem 1.25rem;
+  border-color: #e5e7eb;
+}
+
+.app-header {
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.app-nav__placeholder {
+  font-size: 0.9rem;
+  color: #52616d;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+.app-footer {
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  color: #52616d;
+}
+
+.page__header {
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+  color: #52616d;
+}
+
+.page h1 {
+  margin: 0.1rem 0 0.35rem;
+  font-size: 2rem;
+}
+
+.lede {
+  margin: 0;
+  color: #374151;
+  max-width: 48ch;
+}
+
+.sensor-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.sensor-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.sensor-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sensor-card__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.sensor-card__status {
+  font-size: 0.9rem;
+  color: #52616d;
+}
+
+.sensor-card__value {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.sensor-card__note {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #52616d;
+}

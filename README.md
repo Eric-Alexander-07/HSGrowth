@@ -1,16 +1,34 @@
-# React + Vite
+# Plant Project Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Schlankes Grundgerüst für ein schulisches Sensor-Dashboard.
 
-Currently, two official plugins are available:
+## Installation
+- `npm install`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Entwicklung starten
+- `npm run dev` und im Browser den ausgegebenen Localhost-Link öffnen.
 
-## React Compiler
+## Projektstruktur
+- `src/App.jsx` – Routing-Einstieg mit Layout-Wrap und Dashboard-Route.
+- `src/main.jsx` – React-Bootstrapper inkl. globalem CSS-Import.
+- `src/components/` – wiederverwendbare Bausteine (`Layout`, `SensorCard`).
+- `src/pages/` – Seitenansichten (`Dashboard` mit Dummy-Daten).
+- `src/hooks/` – eigene Hooks (`useFetch` als Skelett).
+- `src/utils/` – Hilfen und Konfiguration (`api.js` als Platzhalter für Basis-URL und Header).
+- `src/styles/` – globale Styles (`base.css` mit Grundlayout).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Erweiterung
+- Neue Seiten: unter `src/pages/` anlegen und im Router (`App.jsx`) registrieren.
+- Weitere Komponenten: nach Bedarf in `src/components/` hinzufügen.
+- Styling: `src/styles/base.css` erweitern oder modulare CSS-Dateien pro Komponente ergänzen.
+- Datenquellen: `useFetch` mit echter Fetch-/Axios-Logik befüllen und Fehler/Loading-State ergänzen.
 
-## Expanding the ESLint configuration
+## API-Anbindung (später)
+- `src/utils/api.js`: `API_BASE_URL` setzen und Standard-Header definieren.
+- `useFetch`: Requests gegen `API_BASE_URL` absetzen, Auth-Header einbinden, Caching/Retry planen.
+- Fehler- und Ladezustände im UI anzeigen (Skeletons oder Status-Badges in `SensorCard`).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Team-Struktur (Platzhalter)
+- Product/Didaktik: TODO
+- Frontend: TODO
+- Backend/IoT: TODO
