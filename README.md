@@ -3,7 +3,7 @@ Schlankes, erweiterbares Frontend-Grundgeruest fuer ein Sensor-Dashboard. Keine 
 
 ## Schnellstart
 - `npm install`
-- `.env` aus `.env.example` kopieren und Werte anpassen.
+- `.env` Werte anpassen.
 - `npm run dev` (Vite startet den Dev-Server; URL aus dem Terminal oeffnen).
 
 ## Environment (.env)
