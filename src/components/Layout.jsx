@@ -4,7 +4,7 @@ import hsGrowthLogo from '../assets/HSGrowth.png'
 import moonIcon from '../assets/moon.svg'
 import sunIcon from '../assets/sun.svg'
 
-const Layout = ({ children }) => {
+const Layout = ({ children, onLogoClick = () => {} }) => {
   // Theme wird beim Laden aus localStorage gelesen; Default: light
   const [theme, setTheme] = useState(() => {
     if (typeof window === 'undefined') return 'light'
@@ -23,7 +23,13 @@ const Layout = ({ children }) => {
     <div className="app-shell">
       <header className="app-header">
         <div className="brand" aria-label="HSGrowth Profil">
-          <img className="brand-logo" src={hsGrowthLogo} alt="HSGrowth Logo" />
+          <img
+            className="brand-logo"
+            src={hsGrowthLogo}
+            alt="HSGrowth Logo"
+            onClick={onLogoClick}
+            style={{ cursor: 'pointer' }}
+          />
           <span className="brand-name">HSGrowth</span>
         </div>
         <nav className="app-nav" aria-label="Status">

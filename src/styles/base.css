@@ -290,7 +290,6 @@ h3 {
 }
 
 .panel:hover {
-  transform: translateY(-2px);
   border-color: rgba(0, 0, 0, 0.06);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
