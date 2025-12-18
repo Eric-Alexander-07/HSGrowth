@@ -1,66 +1,46 @@
 // Dashboard.jsx - Landing-Page mit Dummy-Sensordaten und Platzhaltern fuer Charts/Wetter.
 // Gliedert Bereiche in Status, Beet-Auswahl (als Sensoren), Diagramme und Wetterkarten.
-import ChartPlaceholder from '../components/ChartPlaceholder.jsx'
 import MoistureChart from '../components/MoistureChart.jsx'
 import GardenBedCard from '../components/GardenBedCard.jsx'
 import useWeather from '../hooks/useWeather'
+import useSensorData from '../hooks/useSensorData'
+import { useEffect, useMemo, useState } from 'react'
 
 const statusSnapshot = {
   overall: 'Stabil',
-  avgMoisture: 0,
-  rainChance: 0,
-  temp: 0,
-  wind: 0,
+  avgMoisture: 43,
+  rainChance: 32,
+  temp: 18,
+  wind: 9,
 }
 
-const gardenBeds = [
-  {
-    id: 'bed-1',
-    name: 'Kuechenbeet Nord',
-    crop: 'Salate & Kraeuter',
-    status: 'Optimal',
-    moisture: 62,
-    sunlight: 'Halbschatten',
-    nextTask: 'Leichte Bewaesserung heute Abend',
-    image:
-      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    id: 'bed-2',
-    name: 'Tomatenhaus',
-    crop: 'Cocktail- und Roma-Tomaten',
-    status: 'Leicht trocken',
-    moisture: 38,
-    sunlight: 'Viel Sonne',
-    nextTask: 'Tropfbewaesserung fuer 20 Min. starten',
-    image:
-      'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    id: 'bed-3',
-    name: 'Wurzelbeet',
-    crop: 'Karotten & Rote Bete',
+const describeMoisture = (value) => {
+  if (!Number.isFinite(value)) {
+    return {
+      status: 'Keine Daten',
+      sunlight: 'Sensor offline',
+    }
+  }
+  if (value >= 60) {
+    return {
+      status: 'Optimal',
+      sunlight: 'Feuchte stabil',
+    }
+  }
+  if (value >= 40) {
+    return {
+      status: 'Leicht trocken',
+      sunlight: 'Feuchte sinkt',
+    }
+  }
+  return {
     status: 'Achtung: trocken',
-    moisture: 24,
-    sunlight: 'Halbschatten',
-    nextTask: 'Grosszuegig giessen und mulchen',
-    image:
-      'https://images.unsplash.com/photo-1470058869958-2a77ade41c02?auto=format&fit=crop&w=1200&q=80',
-  },
-  {
-    id: 'bed-4',
-    name: 'Suedhang',
-    crop: 'Lavendel & Blumenwiese',
-    status: 'Stabil',
-    moisture: 57,
-    sunlight: 'Volle Sonne',
-    nextTask: 'Unkraut checken, Blueden beschneiden',
-    image:
-      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80',
-  },
-]
+    sunlight: 'Feuchte kritisch',
+  }
+}
 
 const Dashboard = () => {
+  const [selectedSensorId, setSelectedSensorId] = useState('')
   const {
     data: weather,
     isLoading: weatherLoading,
@@ -68,6 +48,27 @@ const Dashboard = () => {
     now,
     lastUpdatedAt,
   } = useWeather()
+  const { sensors, latestBySensor } = useSensorData()
+  const bedCards = useMemo(() => latestBySensor.map((sensor) => {
+    const moistureValue = Number.isFinite(sensor.value) ? Math.round(sensor.value) : null
+    const { status, sunlight } = describeMoisture(sensor.value)
+
+    return {
+      id: sensor.sensorId ?? sensor.location,
+      name: sensor.location,
+      crop: `Sensor-ID: ${sensor.sensorId}`,
+      status,
+      moisture: moistureValue,
+      sunlight,
+      timestamp: sensor.timestamp,
+    }
+  }), [latestBySensor])
+
+  useEffect(() => {
+    if (bedCards.length === 0) return
+    const exists = bedCards.some((bed) => String(bed.id) === String(selectedSensorId))
+    if (!exists) setSelectedSensorId(String(bedCards[0].id))
+  }, [bedCards, selectedSensorId])
   const rainChanceValue = weather
     ? Math.round(weather.maxPrecip24h)
     : statusSnapshot.rainChance
@@ -156,22 +157,26 @@ const Dashboard = () => {
       <section className="panel selection-panel">
         <h2>Beete & Sensoren</h2>
         <p className="panel__hint">
-          {/* Hier kommen spaeter Standort-/Beet-Filter, Dropdowns und Suchfelder hin. */}
-          Waehle ein Beet oder Standort (noch ohne Logik).
+          Aktuelle Sensorwerte werden direkt aus der JSON-Datei in die Auswahl geladen.
         </p>
         <div className="bed-grid">
-          {gardenBeds.map((bed) => (
-            <GardenBedCard
-              key={bed.id}
-              name={bed.name}
-              crop={bed.crop}
-              status={bed.status}
-              moisture={bed.moisture}
-              sunlight={bed.sunlight}
-              nextTask={bed.nextTask}
-              image={bed.image}
-            />
-          ))}
+          {bedCards.length === 0 ? (
+            <p className="panel__hint">Keine Sensordaten verfuegbar.</p>
+          ) : (
+            bedCards.map((bed) => (
+              <GardenBedCard
+                key={bed.id}
+                name={bed.name}
+                crop={bed.crop}
+                status={bed.status}
+                moisture={bed.moisture}
+                sunlight={bed.sunlight}
+                timestamp={bed.timestamp}
+                isActive={String(bed.id) === String(selectedSensorId)}
+                onSelect={() => setSelectedSensorId(String(bed.id))}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -184,8 +189,11 @@ const Dashboard = () => {
             Historische Verlaeufe folgen nach Auswahl der Chart-Bibliothek.
           </p>
         </header>
-        <ChartPlaceholder />
-        <MoistureChart />
+        <MoistureChart
+          sensors={sensors}
+          selectedSensorId={selectedSensorId}
+          onSensorChange={(id) => setSelectedSensorId(String(id))}
+        />
       </section>
 
       {/* Wetter-Karten als kurzer Forecast-Block */}

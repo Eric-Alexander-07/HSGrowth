@@ -375,6 +375,7 @@ h3 {
   flex-direction: column;
   position: relative;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  cursor: pointer;
 }
 
 [data-theme='dark'] .bed-card {
@@ -421,9 +422,7 @@ h3 {
 }
 
 .bed-card__pill {
-  position: absolute;
-  left: 0.9rem;
-  top: 0.9rem;
+  position: static;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.6);
@@ -442,6 +441,9 @@ h3 {
 
 .bed-card__header {
   padding: 0.85rem 1rem 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .bed-card__title {
@@ -512,6 +514,11 @@ h3 {
   margin: 0.15rem 1rem 1rem;
   color: var(--muted);
   font-size: 0.96rem;
+}
+
+.bed-card.is-active {
+  border-color: rgba(47, 138, 76, 0.5);
+  box-shadow: 0 14px 32px rgba(47, 138, 76, 0.18);
 }
 
 .bed-card--good::after {
@@ -851,6 +858,13 @@ h3 {
   transition: all 140ms ease;
 }
 
+.chart-range-buttons button.is-active {
+  background: var(--green-700);
+  color: #ffffff;
+  border-color: var(--green-800);
+  box-shadow: 0 0 0 4px rgba(47, 138, 76, 0.18);
+}
+
 .chart-range-buttons button:hover {
   background: rgba(47, 138, 76, 0.15);
 }
@@ -863,6 +877,21 @@ h3 {
 
 [data-theme='dark'] .chart-range-buttons button:hover {
   background: rgba(125, 154, 137, 0.2);
+}
+
+[data-theme='dark'] .chart-range-buttons button.is-active {
+  background: var(--green-700);
+  color: #0b1a10;
+  border-color: rgba(125, 154, 137, 0.6);
+}
+
+.chart-controls select {
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow);
 }
 
 .chart-legend {
