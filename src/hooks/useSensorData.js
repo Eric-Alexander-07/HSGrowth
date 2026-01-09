@@ -37,7 +37,7 @@ const normalizeSensors = (rawSensors = []) =>
     return {
       id: String(sensor.id ?? sensor.sensorId ?? `sensor-${index}`),
       label: sensor.label ?? sensor.location ?? `Sensor ${sensor.id ?? index}`,
-      threshold: Number.isFinite(threshold) ? threshold : null,
+      lower_threshold: sensor.lower_threshold ?? null,
       readings,
       latest,
     }
@@ -88,6 +88,7 @@ export default function useSensorData() {
         threshold: sensor.threshold,
         value: sensor.latest?.value ?? null,
         timestamp: sensor.latest?.timestamp ?? '',
+        threshold: sensor.lower_threshold ?? sensor.threshold ?? null,
       })),
     [sensors]
   )

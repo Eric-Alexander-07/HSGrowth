@@ -33,8 +33,6 @@ const Layout = ({ children, onLogoClick = () => {} }) => {
           <span className="brand-name">HSGrowth</span>
         </div>
         <nav className="app-nav" aria-label="Status">
-          <span className="app-nav__pill">Live-Modus aus</span>
-          <span className="app-nav__pill">Demo-Daten</span>
           <button
             type="button"
             className={`theme-toggle ${theme === 'dark' ? 'is-dark' : ''}`}

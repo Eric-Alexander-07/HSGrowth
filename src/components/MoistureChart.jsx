@@ -1,24 +1,21 @@
-// MoistureChart.jsx
 import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Line,
   LineChart,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
-import { MOISTURE_THRESHOLDS } from '../config/moistureThresholds'
 
 const TIME_RANGE_OPTIONS = [
   { id: 'today', label: 'Heute' },
   { id: 'yesterday', label: 'Gestern' },
   { id: 'all', label: 'Alles' },
 ]
-
-const { good: SENSOR_GOOD, warn: SENSOR_WARN } = MOISTURE_THRESHOLDS.sensors
 
 const formatDate = (value) => {
   const date = new Date(value)
@@ -30,17 +27,20 @@ const formatDateTime = (value) => {
   return Number.isFinite(date.getTime()) ? date.toLocaleString('de-DE') : 'Unbekannt'
 }
 
-// Helfer: Tagesgrenzen (lokale Zeit)
+// Tagesgrenzen (lokal)
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 const endOfDay = (d) => startOfDay(d) + 24 * 60 * 60 * 1000
 
-const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
+const MoistureChart = ({ sensors, selectedSensorId, onSensorChange, rainChance24h = null }) => {
   const [rangeId, setRangeId] = useState('today')
 
   const selectedSensor = useMemo(() => {
     if (!sensors || sensors.length === 0) return null
-    return sensors.find((sensor) => String(sensor.id) === String(selectedSensorId)) || sensors[0]
+    return sensors.find((s) => String(s.id) === String(selectedSensorId)) || sensors[0]
   }, [sensors, selectedSensorId])
+
+  const threshold = Number(selectedSensor?.lower_threshold)
+  const hasThreshold = Number.isFinite(threshold)
 
   const filteredData = useMemo(() => {
     if (!selectedSensor?.readings?.length) return []
@@ -55,7 +55,6 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
     const yEnd = endOfDay(y)
 
     const toTs = (reading) => {
-      // Unterstützt entweder reading.ts (number) ODER reading.timestamp (string)
       if (Number.isFinite(reading.ts)) return reading.ts
       const parsed = Date.parse(reading.timestamp)
       return Number.isFinite(parsed) ? parsed : NaN
@@ -73,10 +72,14 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
       .map((reading) => {
         const ts = toTs(reading)
         if (!inRange(ts)) return null
+
+        const value = Number(reading.value)
+        if (!Number.isFinite(value)) return null
+
         return {
-          ts, // für sicheres Sortieren/Filtern
-          timestamp: reading.timestamp ?? new Date(ts).toISOString(), // für XAxis + Tooltip
-          moisture: reading.value,
+          ts,
+          timestamp: reading.timestamp ?? new Date(ts).toISOString(),
+          moisture: value, // ✅ Rohwert
         }
       })
       .filter(Boolean)
@@ -86,14 +89,42 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
   const latestValue = selectedSensor?.latest?.value ?? null
   const latestTimestamp = selectedSensor?.latest?.timestamp ?? null
 
+  // Y-Achse dynamisch (Rohwerte != 0..100)
+  const yDomain = useMemo(() => {
+    if (!filteredData.length) return ['auto', 'auto']
+    const vals = filteredData.map((d) => d.moisture).filter(Number.isFinite)
+    if (!vals.length) return ['auto', 'auto']
+    const min = Math.min(...vals)
+    const max = Math.max(...vals)
+
+    // bisschen Luft geben
+    const pad = Math.max(10, (max - min) * 0.08)
+    return [Math.max(0, min - pad), max + pad]
+  }, [filteredData])
+
+  // Status-Logik fürs Legend (2 Zustände + Gelb-Regel)
+  const needsWater = hasThreshold && Number.isFinite(Number(latestValue)) ? Number(latestValue) < threshold : false
+  const rainHigh = Number.isFinite(Number(rainChance24h)) ? Number(rainChance24h) > 80 : false
+
+  const statusText = !Number.isFinite(Number(latestValue))
+    ? 'Keine Daten'
+    : !hasThreshold
+      ? 'Kein Threshold gesetzt'
+      : needsWater
+        ? (rainHigh ? 'Gießen nötig (aber Regen wahrscheinlich)' : 'Gießen nötig')
+        : 'OK'
+
   return (
     <section className="chart-card">
       <header className="chart-header">
         <div>
           <p className="eyebrow">Bodenfeuchte</p>
           <h2>Sensorverlauf</h2>
-          <p className="panel__hint">Daten aus JSON-Datei, Sensor und Zeitraum koennen ausgewaehlt werden.</p>
+          <p className="panel__hint">
+            Rohwerte aus DB. Zeitraum: Heute/Gestern/Alles. Threshold: lower_threshold.
+          </p>
         </div>
+
         <div className="chart-controls">
           <select
             id="sensor-select"
@@ -110,7 +141,7 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
         </div>
       </header>
 
-      <div className="chart-range-buttons" aria-label="Zeitraeume">
+      <div className="chart-range-buttons" aria-label="Zeiträume">
         {TIME_RANGE_OPTIONS.map((option) => (
           <button
             key={option.id}
@@ -124,13 +155,22 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
       </div>
 
       <div className="chart-legend">
-        <span className="dot dot-green" aria-hidden="true" /> Gruen ({'>='} {SENSOR_GOOD}%)
-        <span className="dot dot-yellow" aria-hidden="true" /> Gelb ({SENSOR_WARN}-{SENSOR_GOOD - 1}%)
-        <span className="dot dot-red" aria-hidden="true" /> Rot ({'<'} {SENSOR_WARN}%)
+        {/* Legend jetzt nach Threshold-Logik */}
+        <span className="dot dot-green" aria-hidden="true" /> OK (≥ Threshold)
+        <span className="dot dot-red" aria-hidden="true" /> Gießen nötig (&lt; Threshold)
+        <span className="dot dot-yellow" aria-hidden="true" /> Gießen nötig + Regenchance &gt; 80%
         <span className="dot" aria-hidden="true" />
+
         <span>
-          Aktuellster Wert:{' '}
-          {latestValue != null ? `${latestValue}% (${formatDateTime(latestTimestamp)})` : 'keine Daten'}
+          Threshold:{' '}
+          {hasThreshold ? `${threshold}` : '—'}{' '}
+          • Regen 24h:{' '}
+          {Number.isFinite(Number(rainChance24h)) ? `${Math.round(rainChance24h)}%` : '—'}
+          {' • '}
+          Status: {statusText}
+          {' • '}
+          Letzter Wert:{' '}
+          {latestValue != null ? `${latestValue} (${formatDateTime(latestTimestamp)})` : 'keine Daten'}
         </span>
       </div>
 
@@ -140,20 +180,23 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={filteredData} margin={{ top: 12, right: 16, left: 0, bottom: 12 }}>
             <CartesianGrid stroke="#e2e8f0" strokeDasharray="4 4" />
-            <XAxis
-              dataKey="timestamp"
-              tickFormatter={formatDate}
-              tickMargin={8}
-              stroke="var(--muted)"
-            />
-            <YAxis domain={[0, 100]} tickCount={6} tickMargin={8} stroke="var(--muted)" />
+            <XAxis dataKey="timestamp" tickFormatter={formatDate} tickMargin={8} stroke="var(--muted)" />
+            <YAxis domain={yDomain} tickMargin={8} stroke="var(--muted)" />
+
             <Tooltip
               labelFormatter={(value) => `Datum: ${formatDateTime(value)}`}
-              formatter={(value) => [`${value}%`, 'Feuchtigkeit']}
+              formatter={(value) => [`${value}`, 'Feuchte (Rohwert)']}
             />
-            <ReferenceArea y1={SENSOR_GOOD} y2={100} fill="#d9f0e1" fillOpacity={0.7} />
-            <ReferenceArea y1={SENSOR_WARN} y2={SENSOR_GOOD} fill="#fbf0d5" fillOpacity={0.75} />
-            <ReferenceArea y1={0} y2={SENSOR_WARN} fill="#f7e1d9" fillOpacity={0.8} />
+
+            {/* Threshold-Zonen: oberhalb grün, unterhalb rot */}
+            {hasThreshold && (
+              <>
+                <ReferenceArea y1={threshold} y2={yDomain[1]} fill="#d9f0e1" fillOpacity={0.55} />
+                <ReferenceArea y1={yDomain[0]} y2={threshold} fill="#f7e1d9" fillOpacity={0.65} />
+                <ReferenceLine y={threshold} stroke="#111827" strokeDasharray="4 4" />
+              </>
+            )}
+
             <Line
               type="monotone"
               dataKey="moisture"
@@ -173,6 +216,7 @@ MoistureChart.defaultProps = {
   sensors: [],
   selectedSensorId: '',
   onSensorChange: null,
+  rainChance24h: null,
 }
 
 export default MoistureChart
