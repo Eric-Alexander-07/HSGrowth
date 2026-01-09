@@ -1,8 +1,10 @@
 // GardenBedCard.jsx - Visuelle Kachel fuer ein Beet mit Status und Kennzahlen.
+import { MOISTURE_THRESHOLDS } from '../config/moistureThresholds'
+
 const getMoistureTone = (value) => {
   if (!Number.isFinite(value)) return 'bed-chip--muted'
-  if (value >= 60) return 'bed-chip--good'
-  if (value >= 35) return 'bed-chip--warn'
+  if (value >= MOISTURE_THRESHOLDS.beds.good) return 'bed-chip--good'
+  if (value >= MOISTURE_THRESHOLDS.beds.warn) return 'bed-chip--warn'
   return 'bed-chip--alert'
 }
 

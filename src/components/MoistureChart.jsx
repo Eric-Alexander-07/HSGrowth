@@ -1,5 +1,4 @@
-// MoistureChart.jsx - Recharts-LineChart mit echten JSON-Sensordaten.
-// Sensor und Zeitraum lassen sich waehlen; neueste Werte stammen aus dem JSON-Export.
+// MoistureChart.jsx
 import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
@@ -11,15 +10,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { MOISTURE_THRESHOLDS } from '../config/moistureThresholds'
 
 const TIME_RANGE_OPTIONS = [
-  { id: '7d', label: '7 Tage', days: 7 },
-  { id: '30d', label: '30 Tage', days: 30 },
-  { id: '90d', label: '90 Tage', days: 90 },
-  { id: 'all', label: 'Alles', days: null },
+  { id: 'today', label: 'Heute' },
+  { id: 'yesterday', label: 'Gestern' },
+  { id: 'all', label: 'Alles' },
 ]
 
-// Kurzer Formatter fuer Monats/Tag-Achse (z.B. 11/24)
+const { good: SENSOR_GOOD, warn: SENSOR_WARN } = MOISTURE_THRESHOLDS.sensors
+
 const formatDate = (value) => {
   const date = new Date(value)
   return `${date.getMonth() + 1}/${date.getDate()}`
@@ -30,28 +30,58 @@ const formatDateTime = (value) => {
   return Number.isFinite(date.getTime()) ? date.toLocaleString('de-DE') : 'Unbekannt'
 }
 
+// Helfer: Tagesgrenzen (lokale Zeit)
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+const endOfDay = (d) => startOfDay(d) + 24 * 60 * 60 * 1000
+
 const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
-  const [rangeId, setRangeId] = useState('30d')
+  const [rangeId, setRangeId] = useState('today')
 
   const selectedSensor = useMemo(() => {
     if (!sensors || sensors.length === 0) return null
     return sensors.find((sensor) => String(sensor.id) === String(selectedSensorId)) || sensors[0]
   }, [sensors, selectedSensorId])
 
-  const selectedRange = TIME_RANGE_OPTIONS.find((option) => option.id === rangeId)
-
   const filteredData = useMemo(() => {
-    if (!selectedSensor) return []
-    const cutoff = selectedRange?.days
-      ? Date.now() - selectedRange.days * 24 * 60 * 60 * 1000
-      : null
+    if (!selectedSensor?.readings?.length) return []
+
+    const now = new Date()
+    const todayStart = startOfDay(now)
+    const todayEnd = endOfDay(now)
+
+    const y = new Date(now)
+    y.setDate(now.getDate() - 1)
+    const yStart = startOfDay(y)
+    const yEnd = endOfDay(y)
+
+    const toTs = (reading) => {
+      // Unterstützt entweder reading.ts (number) ODER reading.timestamp (string)
+      if (Number.isFinite(reading.ts)) return reading.ts
+      const parsed = Date.parse(reading.timestamp)
+      return Number.isFinite(parsed) ? parsed : NaN
+    }
+
+    const inRange = (ts) => {
+      if (!Number.isFinite(ts)) return false
+      if (rangeId === 'all') return true
+      if (rangeId === 'today') return ts >= todayStart && ts < todayEnd
+      if (rangeId === 'yesterday') return ts >= yStart && ts < yEnd
+      return true
+    }
+
     return selectedSensor.readings
-      .filter((reading) => (cutoff ? reading.ts >= cutoff : true))
-      .map((reading) => ({
-        timestamp: reading.timestamp,
-        moisture: reading.value,
-      }))
-  }, [selectedRange?.days, selectedSensor])
+      .map((reading) => {
+        const ts = toTs(reading)
+        if (!inRange(ts)) return null
+        return {
+          ts, // für sicheres Sortieren/Filtern
+          timestamp: reading.timestamp ?? new Date(ts).toISOString(), // für XAxis + Tooltip
+          moisture: reading.value,
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.ts - b.ts)
+  }, [rangeId, selectedSensor])
 
   const latestValue = selectedSensor?.latest?.value ?? null
   const latestTimestamp = selectedSensor?.latest?.timestamp ?? null
@@ -62,9 +92,7 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
         <div>
           <p className="eyebrow">Bodenfeuchte</p>
           <h2>Sensorverlauf</h2>
-          <p className="panel__hint">
-            Daten aus JSON-Datei, Sensor und Zeitraum koennen ausgewaehlt werden.
-          </p>
+          <p className="panel__hint">Daten aus JSON-Datei, Sensor und Zeitraum koennen ausgewaehlt werden.</p>
         </div>
         <div className="chart-controls">
           <select
@@ -96,9 +124,9 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
       </div>
 
       <div className="chart-legend">
-        <span className="dot dot-green" aria-hidden="true" /> Gruen ({'>='} 50%)
-        <span className="dot dot-yellow" aria-hidden="true" /> Gelb (30-49%)
-        <span className="dot dot-red" aria-hidden="true" /> Rot ({'<'} 30%)
+        <span className="dot dot-green" aria-hidden="true" /> Gruen ({'>='} {SENSOR_GOOD}%)
+        <span className="dot dot-yellow" aria-hidden="true" /> Gelb ({SENSOR_WARN}-{SENSOR_GOOD - 1}%)
+        <span className="dot dot-red" aria-hidden="true" /> Rot ({'<'} {SENSOR_WARN}%)
         <span className="dot" aria-hidden="true" />
         <span>
           Aktuellster Wert:{' '}
@@ -123,10 +151,9 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange }) => {
               labelFormatter={(value) => `Datum: ${formatDateTime(value)}`}
               formatter={(value) => [`${value}%`, 'Feuchtigkeit']}
             />
-            {/* Referenzbereiche fuer Ampel (oben Gruen, Mitte Gelb, unten Rot) */}
-            <ReferenceArea y1={50} y2={100} fill="#d9f0e1" fillOpacity={0.7} />
-            <ReferenceArea y1={30} y2={49} fill="#fbf0d5" fillOpacity={0.75} />
-            <ReferenceArea y1={0} y2={29} fill="#f7e1d9" fillOpacity={0.8} />
+            <ReferenceArea y1={SENSOR_GOOD} y2={100} fill="#d9f0e1" fillOpacity={0.7} />
+            <ReferenceArea y1={SENSOR_WARN} y2={SENSOR_GOOD} fill="#fbf0d5" fillOpacity={0.75} />
+            <ReferenceArea y1={0} y2={SENSOR_WARN} fill="#f7e1d9" fillOpacity={0.8} />
             <Line
               type="monotone"
               dataKey="moisture"
