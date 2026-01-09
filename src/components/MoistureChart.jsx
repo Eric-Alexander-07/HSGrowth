@@ -39,7 +39,7 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange, rainChance24
     return sensors.find((s) => String(s.id) === String(selectedSensorId)) || sensors[0]
   }, [sensors, selectedSensorId])
 
-  const threshold = Number(selectedSensor?.lower_threshold)
+  const threshold = Number(selectedSensor?.threshold)
   const hasThreshold = Number.isFinite(threshold)
 
   const filteredData = useMemo(() => {

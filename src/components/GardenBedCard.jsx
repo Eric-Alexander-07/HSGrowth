@@ -1,9 +1,8 @@
-// GardenBedCard.jsx - angepasst auf Threshold-Logik + Settings (⚙️)
 import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/dashboard\/?$/, '') || ''
-const THRESHOLD_ENDPOINT = `${API_BASE}/api/sensor/threshold`
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://10.10.100.110'
+const THRESHOLD_ENDPOINT = `${API_BASE.replace(/\/$/, '')}/api/sensor/threshold`
 
 const getVariantTone = (variant) => {
   switch (variant) {
@@ -45,7 +44,7 @@ const GardenBedCard = ({
   variant,
   isActive,
   onSelect,
-  onThresholdSaved, // optional: parent kann refresh triggern
+  onThresholdSaved,
 }) => {
   const statusTone = getVariantTone(variant)
   const valueChipTone = getChipTone(variant)
@@ -56,7 +55,6 @@ const GardenBedCard = ({
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    // wenn parent threshold updatet, draft nachziehen (aber nicht während Modal offen ist)
     if (!isOpen) setDraft(threshold ?? '')
   }, [threshold, isOpen])
 
@@ -66,11 +64,17 @@ const GardenBedCard = ({
   }, [draft])
 
   const handleSave = async () => {
+    const sensorId = id
+    if (sensorId == null) {
+      setSaveError('Sensor-ID fehlt (id ist null/undefined)')
+      return
+    }
+
     try {
       setSaving(true)
       setSaveError('')
 
-      const payload = { sensorId: 1, threshold: Number(draft) }
+      const payload = { sensorId, threshold: Number(draft) }
       await axios.post(THRESHOLD_ENDPOINT, payload, { timeout: 10000 })
 
       setIsOpen(false)
@@ -129,7 +133,6 @@ const GardenBedCard = ({
         Letzte Messung: {timestamp || 'unbekannt'}
       </p>
 
-      {/* Simple Modal */}
       {isOpen && (
         <div
           className="bed-modal__backdrop"
@@ -140,10 +143,7 @@ const GardenBedCard = ({
             setIsOpen(false)
           }}
         >
-          <div
-            className="bed-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="bed-modal" onClick={(e) => e.stopPropagation()}>
             <h4 className="bed-modal__title">Gieß-Schwelle einstellen</h4>
             <p className="bed-modal__hint">
               Wenn der Wert <strong>unter</strong> der Schwelle liegt, ist “Gießen”.

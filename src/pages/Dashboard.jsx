@@ -1,35 +1,8 @@
-// Dashboard.jsx - angepasst auf Threshold-Logik + Regen-Sonderfall (gelb)
 import MoistureChart from '../components/MoistureChart.jsx'
 import GardenBedCard from '../components/GardenBedCard.jsx'
 import useWeather from '../hooks/useWeather'
 import useSensorData from '../hooks/useSensorData'
 import { useEffect, useMemo, useState } from 'react'
-
-const statusSnapshot = {
-  overall: 'Stabil',
-  avgMoisture: 43, // <- kannst du später dynamisch berechnen
-  rainChance: 32,
-}
-
-const getBedStatus = ({ value, threshold, rainChance24h }) => {
-  if (!Number.isFinite(value)) {
-    return { status: 'Keine Daten', note: 'Sensor offline', variant: 'off' }
-  }
-  if (!Number.isFinite(threshold)) {
-    return { status: 'Schwelle fehlt', note: 'Threshold nicht gesetzt', variant: 'neutral' }
-  }
-
-  if (value >= threshold) {
-    return { status: 'OK', note: 'Feuchte über Schwelle', variant: 'green' }
-  }
-
-  // value < threshold -> eigentlich gießen
-  if (Number.isFinite(rainChance24h) && rainChance24h > 80) {
-    return { status: 'Warten', note: 'Regen > 80% in 24h', variant: 'yellow' }
-  }
-
-  return { status: 'Gießen', note: 'Feuchte unter Schwelle', variant: 'red' }
-}
 
 const Dashboard = () => {
   const [selectedSensorId, setSelectedSensorId] = useState('')
@@ -42,42 +15,60 @@ const Dashboard = () => {
     lastUpdatedAt,
   } = useWeather()
 
-  const { sensors, latestBySensor, loading: sensorsLoading, error: sensorsError } = useSensorData()
+  const { sensors, latestBySensor, refetch } = useSensorData({ pollMs: 3000 })
 
-  const rainChance24h = weather
-    ? Math.round(weather.maxPrecip24h)
-    : statusSnapshot.rainChance
+  const rainChanceValue = weather ? Math.round(weather.maxPrecip24h) : 0
+
+  const getVariant = (value, threshold) => {
+    const v = Number(value)
+    const t = Number(threshold)
+    if (!Number.isFinite(v) || !Number.isFinite(t)) return 'off'
+    if (v >= t) return 'green'
+    return rainChanceValue > 80 ? 'yellow' : 'red'
+  }
 
   const bedCards = useMemo(() => {
     return latestBySensor.map((sensor) => {
-      const value = Number.isFinite(sensor.value) ? Math.round(sensor.value) : null
-      const threshold = sensor.threshold != null ? Number(sensor.threshold) : null
+      const value = Number.isFinite(sensor.value) ? sensor.value : NaN
+      const threshold = sensor.threshold
 
-      const info = getBedStatus({
-        value: Number(value),
-        threshold: Number(threshold),
-        rainChance24h,
-      })
+      const variant = getVariant(value, threshold)
+
+      const status =
+        variant === 'green'
+          ? 'OK'
+          : variant === 'yellow'
+          ? 'Gießen? (Regen kommt)'
+          : variant === 'red'
+          ? 'Gießen'
+          : 'Keine Daten'
+
+      const sunlight =
+        variant === 'green'
+          ? 'Feuchte über Schwelle'
+          : variant === 'yellow'
+          ? 'Unter Schwelle, aber Regenwahrscheinlichkeit > 80%'
+          : variant === 'red'
+          ? 'Unter Schwelle – gießen'
+          : 'Sensor offline'
 
       return {
-        id: sensor.sensorId ?? sensor.location,
+        id: sensor.sensorId,
         name: sensor.location,
         crop: `Sensor-ID: ${sensor.sensorId}`,
-        // Rohwert anzeigen (kein %)
-        moisture: value,
+        moisture: Number.isFinite(value) ? Math.round(value) : null,
         threshold,
-        // neue Status-Infos
-        status: info.status,
-        sunlight: info.note, // reuse existing prop name (bis du es umbenennst)
-        variant: info.variant, // neu (für Farben, falls du willst)
+        status,
+        sunlight,
         timestamp: sensor.timestamp,
+        variant,
       }
     })
-  }, [latestBySensor, rainChance24h])
+  }, [latestBySensor, rainChanceValue])
 
   useEffect(() => {
     if (bedCards.length === 0) return
-    const exists = bedCards.some((bed) => String(bed.id) === String(selectedSensorId))
+    const exists = bedCards.some((b) => String(b.id) === String(selectedSensorId))
     if (!exists) setSelectedSensorId(String(bedCards[0].id))
   }, [bedCards, selectedSensorId])
 
@@ -85,12 +76,12 @@ const Dashboard = () => {
     lastUpdatedAt != null ? Math.max(0, Math.round((now - lastUpdatedAt) / 60000)) : null
 
   const formatWithUnit = (value, unit, digits = 1) =>
-    Number.isFinite(value) ? `${value.toFixed(digits)} ${unit}` : '\u2013'
+    Number.isFinite(value) ? `${value.toFixed(digits)} ${unit}` : '–'
 
   const weatherCards = weather
     ? [
         {
-          label: 'Regen (naechste 24h)',
+          label: 'Regen (nächste 24h)',
           value: formatWithUnit(weather.maxPrecip24h, '%', 0),
           note: 'Max. Regenwahrscheinlichkeit 24h',
         },
@@ -101,33 +92,8 @@ const Dashboard = () => {
         },
         {
           label: 'Temperatur',
-          value: formatWithUnit(weather.temperatureC, '\u00b0C', 1),
+          value: formatWithUnit(weather.temperatureC, '°C', 1),
           note: 'Aktuell',
-        },
-        {
-          label: 'Sonneneinstrahlung',
-          value: formatWithUnit(weather.shortwaveRadiation, 'W/m\u00b2', 0),
-          note: 'Zuletzt gemessen',
-        },
-        {
-          label: 'Luftfeuchtigkeit',
-          value: formatWithUnit(weather.humidityPercent, '%', 0),
-          note: 'Relative Feuchte',
-        },
-        {
-          label: 'Windgeschwindigkeit',
-          value: formatWithUnit(weather.windSpeed, 'km/h', 1),
-          note: '10 m Hoehe',
-        },
-        {
-          label: 'ET0',
-          value: formatWithUnit(weather.et0mm, 'mm', 2),
-          note: 'Referenz-ET0',
-        },
-        {
-          label: 'UV-Index',
-          value: Number.isFinite(weather.uvIndex) ? weather.uvIndex.toFixed(1) : '\u2013',
-          note: 'Stundenwert',
         },
       ]
     : []
@@ -135,74 +101,42 @@ const Dashboard = () => {
   return (
     <section className="page dashboard">
       <header className="page__header">
-        <p className="eyebrow">Uebersicht</p>
+        <p className="eyebrow">Übersicht</p>
         <h1>Beet-Status</h1>
-        <p className="lede">Jedes Beet enthaelt einen Sensor. Hier die aktuellen Zustands-Snapshots.</p>
+        <p className="lede">Sensorwerte kommen live aus der API (MySQL). Threshold bestimmt OK/Gießen.</p>
       </header>
 
-      {/* Kurzer Snapshot */}
-      <section className="status-strip">
-        <article className="status-chip">
-          <p className="status-chip__label">Gesamtstatus</p>
-          <p className="status-chip__value">{statusSnapshot.overall}</p>
-        </article>
-
-        <article className="status-chip">
-          <p className="status-chip__label">Bodenfeuchte</p>
-          <p className="status-chip__value">
-            {sensorsLoading ? '...' : `${bedCards.length} Sensoren`}
-          </p>
-        </article>
-
-        <article className="status-chip">
-          <p className="status-chip__label">Regenwahrscheinlichkeit</p>
-          <p className="status-chip__value">
-            {weatherLoading ? '...' : `${rainChance24h}%`}
-          </p>
-        </article>
-      </section>
-
-      {/* Sensor-/Beet-Karten */}
       <section className="panel selection-panel">
         <h2>Beete & Sensoren</h2>
-        <p className="panel__hint">
-          Sensorwerte kommen live aus der API (MySQL). Threshold bestimmt OK/Gießen.
-        </p>
-
-        {sensorsError && (
-          <p className="panel__hint">Sensor-API Fehler: {String(sensorsError)}</p>
-        )}
-
         <div className="bed-grid">
           {bedCards.length === 0 ? (
-            <p className="panel__hint">
-              {sensorsLoading ? 'Lade Sensordaten ...' : 'Keine Sensordaten verfuegbar.'}
-            </p>
+            <p className="panel__hint">Keine Sensordaten verfügbar.</p>
           ) : (
             bedCards.map((bed) => (
               <GardenBedCard
                 key={bed.id}
+                id={bed.id}
                 name={bed.name}
                 crop={bed.crop}
+                moisture={bed.moisture}
+                threshold={bed.threshold}
                 status={bed.status}
-                moisture={bed.moisture}     // Rohwert
-                threshold={bed.threshold}   // NEU
-                variant={bed.variant}       // optional für Farben
-                sunlight={bed.sunlight}     // note
+                sunlight={bed.sunlight}
                 timestamp={bed.timestamp}
+                variant={bed.variant}
                 isActive={String(bed.id) === String(selectedSensorId)}
                 onSelect={() => setSelectedSensorId(String(bed.id))}
+                onThresholdSaved={() => refetch()}
               />
             ))
           )}
         </div>
       </section>
 
-      {/* Diagramme */}
       <section className="panel">
         <header className="panel__header">
           <h2>Diagramme</h2>
-          <p className="panel__hint">Historische Verläufe für den ausgewählten Sensor.</p>
+          <p className="panel__hint">Historische Verläufe pro Sensor.</p>
         </header>
 
         <MoistureChart
@@ -212,13 +146,9 @@ const Dashboard = () => {
         />
       </section>
 
-      {/* Wetter */}
       <section className="panel">
         <header className="panel__header">
           <h2>Wetter & Regen</h2>
-          <p className="panel__hint">
-            Detailansicht fuer Regenwahrscheinlichkeit, Temperatur, Wind und Hinweise (Open-Meteo).
-          </p>
           <div className="api-indicator">
             <span className={`api-indicator__dot ${weatherError ? 'is-error' : 'is-ok'}`} />
             <span>{weatherError ? 'Open-Meteo nicht erreichbar' : 'Open-Meteo aktiv'}</span>
@@ -226,12 +156,8 @@ const Dashboard = () => {
         </header>
 
         {weatherLoading && <p className="panel__hint">Lade Wetterdaten ...</p>}
-        {weatherError && !weatherLoading && (
-          <p className="panel__hint">Fehler beim Laden: {weatherError}</p>
-        )}
-        {weather && (
-          <p className="panel__hint">Letztes Update: {minutesSinceUpdate} min</p>
-        )}
+        {weatherError && !weatherLoading && <p className="panel__hint">Fehler: {weatherError}</p>}
+        {weather && <p className="panel__hint">Letztes Update: {minutesSinceUpdate} min</p>}
 
         <div className="weather-grid">
           {!weatherLoading &&
