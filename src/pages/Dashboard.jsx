@@ -1,5 +1,6 @@
 import MoistureChart from '../components/MoistureChart.jsx'
 import GardenBedCard from '../components/GardenBedCard.jsx'
+import ThresholdSettingsModal from '../components/ThresholdSettingsModal.jsx'
 import useWeather from '../hooks/useWeather'
 import useSensorData from '../hooks/useSensorData'
 import { useEffect, useMemo, useState } from 'react'
@@ -7,14 +8,11 @@ import { useEffect, useMemo, useState } from 'react'
 const Dashboard = () => {
   const [selectedSensorId, setSelectedSensorId] = useState('')
 
-  const {
-    data: weather,
-    isLoading: weatherLoading,
-    error: weatherError,
-    now,
-    lastUpdatedAt,
-  } = useWeather()
+  // ✅ globales Beet-Settings Popup
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [activeBed, setActiveBed] = useState(null) // { id, name, threshold }
 
+  const { data: weather, isLoading: weatherLoading, error: weatherError, now, lastUpdatedAt } = useWeather()
   const { sensors, latestBySensor, refetch } = useSensorData({ pollMs: 3000 })
 
   const rainChanceValue = weather ? Math.round(weather.maxPrecip24h) : 0
@@ -31,26 +29,25 @@ const Dashboard = () => {
     return latestBySensor.map((sensor) => {
       const value = Number.isFinite(sensor.value) ? sensor.value : NaN
       const threshold = sensor.threshold
-
       const variant = getVariant(value, threshold)
 
       const status =
         variant === 'green'
           ? 'OK'
           : variant === 'yellow'
-          ? 'Gießen? (Regen kommt)'
-          : variant === 'red'
-          ? 'Gießen'
-          : 'Keine Daten'
+            ? 'Gießen? (Regen kommt)'
+            : variant === 'red'
+              ? 'Gießen'
+              : 'Keine Daten'
 
       const sunlight =
         variant === 'green'
           ? 'Feuchte über Schwelle'
           : variant === 'yellow'
-          ? 'Unter Schwelle, aber Regenwahrscheinlichkeit > 80%'
-          : variant === 'red'
-          ? 'Unter Schwelle – gießen'
-          : 'Sensor offline'
+            ? 'Unter Schwelle, aber Regenwahrscheinlichkeit > 80%'
+            : variant === 'red'
+              ? 'Unter Schwelle – gießen'
+              : 'Sensor offline'
 
       return {
         id: sensor.sensorId,
@@ -80,22 +77,14 @@ const Dashboard = () => {
 
   const weatherCards = weather
     ? [
-        {
-          label: 'Regen (nächste 24h)',
-          value: formatWithUnit(weather.maxPrecip24h, '%', 0),
-          note: 'Max. Regenwahrscheinlichkeit 24h',
-        },
-        {
-          label: 'Niederschlag',
-          value: formatWithUnit(weather.precipitationMm, 'mm', 2),
-          note: 'Letzte Stunde',
-        },
-        {
-          label: 'Temperatur',
-          value: formatWithUnit(weather.temperatureC, '°C', 1),
-          note: 'Aktuell',
-        },
-      ]
+      { label: 'Regen (nächste 24h)', value: formatWithUnit(weather.maxPrecip24h, '%', 0), note: 'Regenwahrscheinlichkeit' },
+      { label: 'Niederschlag', value: formatWithUnit(weather.precipitationMm, 'mm', 2), note: 'Letzte Stunde' },
+      { label: 'Temperatur', value: formatWithUnit(weather.temperatureC, '°C', 1), note: 'Aktuell' },
+      { label: 'Wind', value: formatWithUnit(weather.windSpeed, 'km/h', 1), note: '10 m Höhe' },
+      { label: 'Luftfeuchte', value: formatWithUnit(weather.humidityPercent, '%', 0), note: 'Relative Feuchte' },
+      { label: 'Sonneneinstrahlung', value: formatWithUnit(weather.shortwaveRadiation, 'W/m²', 0), note: 'Zuletzt gemessen' },
+      { label: 'ET₀', value: formatWithUnit(weather.et0mm, 'mm', 2), note: 'Referenz-Verdunstung' },
+    ]
     : []
 
   return (
@@ -107,7 +96,10 @@ const Dashboard = () => {
       </header>
 
       <section className="panel selection-panel">
-        <h2>Beete & Sensoren</h2>
+        <div className="panel__header">
+          <h2>Beete & Sensoren</h2>
+        </div>
+
         <div className="bed-grid">
           {bedCards.length === 0 ? (
             <p className="panel__hint">Keine Sensordaten verfügbar.</p>
@@ -115,18 +107,13 @@ const Dashboard = () => {
             bedCards.map((bed) => (
               <GardenBedCard
                 key={bed.id}
-                id={bed.id}
-                name={bed.name}
-                crop={bed.crop}
-                moisture={bed.moisture}
-                threshold={bed.threshold}
-                status={bed.status}
-                sunlight={bed.sunlight}
-                timestamp={bed.timestamp}
-                variant={bed.variant}
+                {...bed}
                 isActive={String(bed.id) === String(selectedSensorId)}
                 onSelect={() => setSelectedSensorId(String(bed.id))}
-                onThresholdSaved={() => refetch()}
+                onOpenSettings={(b) => {
+                  setActiveBed(b)
+                  setSettingsOpen(true)
+                }}
               />
             ))
           )}
@@ -171,6 +158,13 @@ const Dashboard = () => {
             ))}
         </div>
       </section>
+
+      <ThresholdSettingsModal
+        isOpen={settingsOpen}
+        bed={activeBed}
+        onClose={() => setSettingsOpen(false)}
+        onSaved={() => refetch()}
+      />
     </section>
   )
 }

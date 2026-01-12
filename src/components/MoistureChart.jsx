@@ -175,7 +175,7 @@ const MoistureChart = ({ sensors, selectedSensorId, onSensorChange, rainChance24
       </div>
 
       {filteredData.length === 0 ? (
-        <p className="panel__hint">Keine Messwerte im gewaehlten Zeitraum.</p>
+        <p className="panel__hint">Keine Messwerte im gewählten Zeitraum.</p>
       ) : (
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={filteredData} margin={{ top: 12, right: 16, left: 0, bottom: 12 }}>

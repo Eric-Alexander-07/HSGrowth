@@ -403,6 +403,11 @@ h3 {
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.36);
 }
 
+.bed-card__pill_container {
+  display: flex;
+  justify-content: space-between;
+}
+
 .bed-card__media {
   position: relative;
   aspect-ratio: 4 / 3;
@@ -423,13 +428,15 @@ h3 {
 
 .bed-card__pill {
   position: static;
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 1.75rem;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.6);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.9rem;
   letter-spacing: 0.01em;
+  display: flex;
+  justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(6px);
 }
@@ -594,17 +601,20 @@ h3 {
   border-left: 7px solid var(--red);
 }
 
-.sensor--green:hover, [data-theme='dark'] .sensor--green:hover {
+.sensor--green:hover,
+[data-theme='dark'] .sensor--green:hover {
   border-color: var(--green-700);
   box-shadow: 0 14px 34px rgba(127, 209, 161, 0.32);
 }
 
-.sensor--yellow:hover, [data-theme='dark'] .sensor--yellow:hover {
+.sensor--yellow:hover,
+[data-theme='dark'] .sensor--yellow:hover {
   border-color: var(--yellow);
   box-shadow: 0 14px 34px rgba(227, 181, 79, 0.3);
 }
 
-.sensor--red:hover, [data-theme='dark'] .sensor--red:hover {
+.sensor--red:hover,
+[data-theme='dark'] .sensor--red:hover {
   border-color: var(--red);
   box-shadow: 0 14px 34px rgba(224, 132, 116, 0.3);
 }
@@ -934,4 +944,187 @@ h3 {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.settings-form {
+  display: grid;
+}
+
+.bed-modal__error {
+  color: var(--red);
+}
+
+.bed-modal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 520px) {
+  .bed-modal__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bed-modal__field {
+  display: flex;
+  flex-direction: column;
+}
+
+.bed-modal__success {
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.nav-settings {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-right: 10px;
+  /* Abstand zum Theme Toggle */
+  line-height: 1;
+  font-size: 18px;
+}
+
+.nav-settings:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.nav-settings:active {
+  transform: scale(0.98);
+}
+
+.bed-card__header {
+  position: relative;
+  /* kann bleiben, aber ohne padding-right */
+}
+
+
+.bed-card__settings {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  /* wichtig, falls Pill drüber liegt */
+
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+
+  line-height: 1;
+  font-size: 16px;
+}
+
+
+.bed-card__settings:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.bed-card__settings:active {
+  transform: scale(0.98);
+}
+
+/* Modal Backdrop */
+.bed-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 16px;
+}
+
+/* Modal Box */
+.bed-modal {
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+}
+
+.btn {
+  --btn-bg: #1f7a45;
+  --btn-bg-hover: #18663a;
+  --btn-bg-active: #145632;
+  --btn-text: #ffffff;
+  --btn-border: rgba(0, 0, 0, 0.15);
+
+  appearance: none;
+  border: 1px solid var(--btn-border);
+  border-radius: 12px;
+  padding: 3px 10px;
+  margin-right: 15px;
+  min-height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+
+  color: var(--btn-text);
+  background: var(--btn-bg);
+
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 80ms ease,
+    opacity 120ms ease;
+}
+
+.btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+.btn:active {
+  background: var(--btn-bg-active);
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(31, 122, 69, 0.35);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-bg-hover: rgba(0, 0, 0, 0.04);
+  --btn-bg-active: rgba(0, 0, 0, 0.08);
+  --btn-text: #1f2937;
+  --btn-border: rgba(0, 0, 0, 0.12);
 }

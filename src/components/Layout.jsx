@@ -1,18 +1,18 @@
-// Layout.jsx - einfacher Rahmen mit Header, Main und Footer.
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import hsGrowthLogo from '../assets/HSGrowth.png'
 import moonIcon from '../assets/moon.svg'
 import sunIcon from '../assets/sun.svg'
 
-const Layout = ({ children, onLogoClick = () => {} }) => {
-  // Theme wird beim Laden aus localStorage gelesen; Default: light
+const Layout = ({ children, onLogoClick = () => { } }) => {
+  const navigate = useNavigate()
+
   const [theme, setTheme] = useState(() => {
     if (typeof window === 'undefined') return 'light'
     return localStorage.getItem('hs-theme') || 'light'
   })
 
   useEffect(() => {
-    // Theme-Attribute fuer CSS-Variablen setzen und merken
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('hs-theme', theme)
   }, [theme])
@@ -27,12 +27,23 @@ const Layout = ({ children, onLogoClick = () => {} }) => {
             className="brand-logo"
             src={hsGrowthLogo}
             alt="HSGrowth Logo"
-            onClick={onLogoClick}
+            onClick={() => navigate('/')}
             style={{ cursor: 'pointer' }}
           />
-          <span className="brand-name">HSGrowth</span>
+          <span className="brand-name" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>HSGrowth</span>
         </div>
+
         <nav className="app-nav" aria-label="Status">
+          <button
+            type="button"
+            className="nav-settings"
+            onClick={() => navigate('/settings')}
+            aria-label="Einstellungen"
+            title="Einstellungen"
+          >
+            ⚙️
+          </button>
+
           <button
             type="button"
             className={`theme-toggle ${theme === 'dark' ? 'is-dark' : ''}`}
