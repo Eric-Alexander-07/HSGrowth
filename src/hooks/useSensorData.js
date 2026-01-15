@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://10.10.100.110'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || window.location.origin
 const DASHBOARD_ENDPOINT = `${API_BASE.replace(/\/$/, '')}/api/dashboard`
 
 const parseTimestamp = (value) => {
