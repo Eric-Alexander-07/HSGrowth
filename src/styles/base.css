@@ -1128,3 +1128,11 @@ h3 {
   --btn-text: #1f2937;
   --btn-border: rgba(0, 0, 0, 0.12);
 }
+
+[data-theme='dark'] .bed-modal {
+  background: linear-gradient(135deg, var(--card) 0%, #1a1f20 100%);
+}
+
+[data-theme='dark'] .btn--ghost {
+  background: linear-gradient(135deg, var(--green-700) 0%, var(--green-700) 100%);
+}
